@@ -25,8 +25,43 @@ docker run -d -p 543:543 --name agroTrack mongo
 ```cmd
 docker ps
 ```
-6. We create the db statements. Run the createCollections.bat file.  
+6. We create the db collections. Run the createCollections.bat file.  
 7. Run the main.py file.  
+### For Linux
+1. Run terminal
+2. Run the following commands
+```bash
+sudo apt update
+```
+```bash
+sudo apt install -y python3 python3-pip
+```
+2. Create the virtual environment
+```bash
+python -m venv ./venv
+```
+3. Activate the virtual environment
+```bash
+source ./venv/bin/activate
+```
+4. Install docker
+```bash
+sudo apt install docker.io
+```
+5. Install MongoDB with docker
+```bash
+sudo docker run -d -p 543:543 --name agroTrack mongo
+```
+6. Run the db
+```bash
+sudo docker start
+```
+&nbsp;We see if the database is running
+```bash
+sudo docker ps
+```
+7. We create the db collections. Run the createCollections.sh file.  
+8. Run the main.py file.  
 
 
 [def1]: https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module

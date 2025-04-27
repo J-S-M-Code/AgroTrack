@@ -9,5 +9,4 @@ echo db.createCollection("usuarios") >> mongo-setup.js
 docker exec -i agroTrack mongosh < mongo-setup.js
 
 del mongo-setup.js
-
 pause
