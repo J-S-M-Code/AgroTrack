@@ -6,29 +6,29 @@ Python 3
 Docker  
 MongoDB
 ## System installation  
+Copy repository
 ### For Windows 
 1.  [Download Docker][def1]  
     [Download Python][def2]  
-2. Press win+r
-3. type cmd and press enter
-4. Run the following commands
+    [Download Repository][def3]
+2. Unzip the .zip file
+3. Press win+r
+4. type cmd and press enter
+5. Run the following commands
 ```cmd 
 docker pull mongo
 ```
 ```cmd
 docker run -d -p 543:543 --name agroTrack mongo
 ```
+&nbsp;We see if the database is running
 ```cmd
-docker exec -it agroTrack mongosh
+docker ps
 ```
-&nbsp;If it doesn't work, try with
-```cmd
-docker exec -i agroTrack mongosh
-```
-```cmd
-Agregar un archivo que cree los archivos por primera vez
-```
+6. We create the db statements. Run the createCollections.bat file.  
+7. Run the main.py file.  
 
 
 [def1]: https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module
 [def2]: https://www.python.org/ftp/python/3.13.3/python-3.13.3-amd64.exe
+[def3]: https://codeload.github.com/J-S-M-Code/AgroTrack/zip/refs/heads/main
