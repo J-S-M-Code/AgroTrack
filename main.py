@@ -9,6 +9,10 @@ Este alertara cuando el animal este fuera de su geocerca:
     Alerta al usuario:
         Se cuadrara que usuarios estan cerca de este animal y seran notificados.
         Esta notificacion sera enviada a 1km de distancia, con una segunda alerta cuando este a menos de 500m
+
+Agregar que pueda pedir un reporte el dueño de los animales (mostrando aquellos que se salieron con las alertas) para consultar --
+Agregar para añadir animales y campos --listo
+Agregar para modificar animales y campos --
 '''
 
 from pymongo import MongoClient as mc
@@ -22,8 +26,10 @@ import webbrowser
 import subprocess
 
 # api.py
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+
+
 
 #------------------------------------------------
 #Conexion con la base de datos en mongo
@@ -70,6 +76,70 @@ def obtener_notificaciones():
         })
     return jsonify(resultado)
 #------------------------------------------------
+
+#------------------------------------------------
+#api de la pagina para enviar datos a la bd
+@app.post("/api/duenos")
+def crear_dueno():
+    datos = request.get_json()
+    campos = ["_id", "nombre", "apellido", "telefono", "email", "direccion", "idCampo"]
+    if not all(k in datos for k in campos):
+        return jsonify({"error": "Faltan campos del dueño"}), 400
+    db.dueños.insert_one({
+        "_id": datos["_id"],
+        "nombre": datos["nombre"],
+        "apellido": datos["apellido"],
+        "telefono": datos["telefono"],
+        "email": datos["email"],
+        "direccion": datos["direccion"],
+        "idCampo": datos["idCampo"]
+    })
+    return jsonify({"mensaje": "Dueño creado"}), 201
+
+
+@app.post("/api/animales")
+def crear_animal():
+    datos = request.get_json()
+    campos = ["_id", "coordenadas", "idDueño", "idCampo", "descripcion", "tamaño", "foto"]
+    if not all(k in datos for k in campos):
+        return jsonify({"error": "Faltan campos del animal"}), 400
+    db.animales.insert_one({
+        "_id": datos["_id"],
+        "coordenadas": datos["coordenadas"],
+        "idDueño": datos["idDueño"],
+        "idCampo": datos["idCampo"],
+        "descripcion": datos["descripcion"],
+        "tamaño": datos["tamaño"],
+        "foto": datos["foto"]
+    })
+    return jsonify({"mensaje": "Animal creado"}), 201
+
+
+@app.post("/api/campos")
+def crear_campo():
+    datos = request.get_json()
+    if not datos.get("_id") or not datos.get("poligono"):
+        return jsonify({"error": "Faltan campos obligatorios"}), 400
+    db.campos.insert_one({
+        "_id": datos["_id"],
+        "poligono": datos["poligono"]
+    })
+    return jsonify({"mensaje": "Campo creado"}), 201
+
+
+@app.post("/api/usuarios")
+def crear_usuario():
+    datos = request.get_json()
+    if not datos.get("_id") or not datos.get("coordenadas"):
+        return jsonify({"error": "Faltan campos del usuario"}), 400
+    db.usuarios.insert_one({
+        "_id": datos["_id"],
+        "coordenadas": datos["coordenadas"]
+    })
+    return jsonify({"mensaje": "Usuario creado"}), 201
+
+#------------------------------------------------
+
 
 #------------------------------------------------
 # Verifica si un punto está dentro del polígono del campo
@@ -156,10 +226,7 @@ def verificar_animales():
             # Si no existe o han pasado 5 minutos, crear nueva alerta
             registrar_alerta_animal(animal, "fuera_geocerca", "Animal fuera de la geocerca.")
             alertar_dueño(animal)
-            '''
-            Problema, cuando se genera la alerta del animal no se esta ingresando 
-            es esta parte REVISAR y a lo sumo ejecutar verificaciones con thread
-            '''
+
             for user in usuarios.find():
                 distancia = distancia_km(animal["coordenadas"], user["coordenadas"])
                 print(distancia)
@@ -204,21 +271,18 @@ def verificar_animales():
 #-------------------------------------------------------------------------------------
 
 def iniciar_verificador():
+    subprocess.Popen(["python", "location emulator.py"])
     while True:
         print(f"🕒 Verificación a las {datetime.now().strftime('%H:%M:%S')}")
         verificar_animales()
         time.sleep(300)  # Simulando 5 minutos con 5 segundos
 
 if __name__ == "__main__":
-    
+
     # Ruta absoluta al index.html
     ruta_index = os.path.abspath("index.html")
-    print(ruta_index)
     url = "file://" + ruta_index
     webbrowser.open(url)
-
-    # Ejecutar el script que actualiza los datos
-    subprocess.Popen(["python", "location emulator.py"])
 
     # Crear hilo para verificador
     verificador_thread = threading.Thread(target=iniciar_verificador)
@@ -226,4 +290,4 @@ if __name__ == "__main__":
     verificador_thread.start()
 
     # Iniciar Flask
-    app.run(debug=True)
+    app.run(debug=False)

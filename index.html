@@ -4,23 +4,78 @@
   <meta charset="UTF-8">
   <title>AgroTrack - Mapa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    #map {
-      height: 90vh;
-      width: 100%;
-    }
-    #notificaciones {
-      height: 10vh;
-      overflow-y: auto;
-      background: #f9f9f9;
-      border-top: 1px solid #ccc;
-      padding: 10px;
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
       font-family: sans-serif;
     }
+
+    #map {
+      flex: 7;
+      height: 100%;
+    }
+
+    #sidebar {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #ccc;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    button {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+      background-color: #2ecc71;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #27ae60;
+    }
+
+    .formulario {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 6px;
+    }
+
+    .formulario label {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .formulario input {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #notificaciones {
+      margin-top: 10px;
+      background: #fff8f8;
+      border: 1px solid #e74c3c;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
     .notificacion {
       margin-bottom: 5px;
       padding: 5px;
@@ -31,16 +86,30 @@
 </head>
 <body>
   <div id="map"></div>
-  <div id="notificaciones"></div>
+
+  <div id="sidebar">
+    <h2>Cargar Datos</h2>
+    <button onclick="mostrarFormulario('dueño')">Nuevo Dueño</button>
+    <button onclick="mostrarFormulario('animal')">Nuevo Animal</button>
+    <button onclick="mostrarFormulario('campo')">Nuevo Campo</button>
+    <button onclick="mostrarFormulario('usuario')">Nuevo Usuario</button>
+
+    <div id="formulario-container"></div>
+
+    <div id="notificaciones">
+      <strong>Notificaciones:</strong>
+      <div id="noti-lista"></div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([-30.0, -66.0], 13); // Vista inicial
+    const map = L.map("map").setView([-30.0, -66.0], 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    let animalMarker = null;
+    let animalMarkers = [];
     let userMarker = null;
     let campoPolygon = null;
 
@@ -63,17 +132,29 @@
       const userCoord = [usuario.coordenadas.lat, usuario.coordenadas.lon];
       const campoCoords = campo.poligono.map(p => [p.lat, p.lon]);
 
-      if (animalMarker) map.removeLayer(animalMarker);
-      animalMarker = L.marker(animalCoord, { title: "Animal" })
+      // Eliminar marcadores anteriores
+      animalMarkers.forEach(m => map.removeLayer(m));
+      animalMarkers = [];
+
+      // Agregar todos los animales
+      animales.forEach(animal => {
+      const animalCoord = [animal.coordenadas.lat, animal.coordenadas.lon];
+      const marker = L.marker(animalCoord, { title: `Animal ${animal._id}` })
         .addTo(map)
-        .bindPopup("🐄 Animal");
+        .bindPopup(`🐄 ${animal.descripcion || "Animal sin descripción"}`);
+      animalMarkers.push(marker);
+      });
+
 
       if (userMarker) map.removeLayer(userMarker);
-      userMarker = L.marker(userCoord, { title: "Usuario", icon: L.icon({
-        iconUrl: 'https://cdn-icons-png.flaticon.com/512/1946/1946429.png',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-      })})
+      userMarker = L.marker(userCoord, {
+        title: "Usuario",
+        icon: L.icon({
+          iconUrl: 'https://cdn-icons-png.flaticon.com/512/1946/1946429.png',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30],
+        })
+      })
         .addTo(map)
         .bindPopup("🧑 Usuario");
 
@@ -88,7 +169,7 @@
     async function cargarNotificaciones() {
       const res = await fetch("http://localhost:5000/api/notificaciones");
       const notificaciones = await res.json();
-      const contenedor = document.getElementById("notificaciones");
+      const contenedor = document.getElementById("noti-lista");
       contenedor.innerHTML = "";
 
       notificaciones.forEach(n => {
@@ -99,11 +180,151 @@
       });
     }
 
-    // Cargar al inicio
+    function mostrarFormulario(tipo) {
+      const container = document.getElementById("formulario-container");
+      container.innerHTML = ""; // Limpiar formulario anterior
+
+      const form = document.createElement("div");
+      form.className = "formulario";
+
+      let html = "";
+
+      if (tipo === "dueño") {
+        html = `
+        <h3>Nuevo Dueño</h3>
+        <label>ID</label>
+        <input type="text" id="idDuenio" />
+        <label>Nombre</label>
+        <input type="text" id="nombreDuenio" />
+        <label>Apellido</label>
+        <input type="text" id="apellidoDuenio" />
+        <label>Teléfono</label>
+        <input type="text" id="telefonoDuenio" />
+        <label>Email</label>
+        <input type="email" id="emailDuenio" />
+        <label>Dirección</label>
+        <input type="text" id="direccionDuenio" />
+        <label>ID Campo</label>
+        <input type="text" id="idCampoDuenio" />
+        <button onclick="enviarFormulario('duenio')">Enviar</button>
+        `;
+      } else if (tipo === "animal") {
+        html = `
+        <h3>Nuevo Animal</h3>
+        <label>ID</label>
+        <input type="text" id="idAnimal" />
+        <label>Latitud</label>
+        <input type="number" id="latAnimal" />
+        <label>Longitud</label>
+        <input type="number" id="lonAnimal" />
+        <label>ID Dueño</label>
+        <input type="text" id="idDuenioAnimal" />
+        <label>ID Campo</label>
+        <input type="text" id="idCampoAnimal" />
+        <label>Descripción</label>
+        <input type="text" id="descripcionAnimal" />
+        <label>Tamaño</label>
+        <input type="text" id="tamanoAnimal" />
+        <label>Foto (URL)</label>
+        <input type="text" id="fotoAnimal" />
+        <button onclick="enviarFormulario('animal')">Enviar</button>
+        `;
+      } else if (tipo === "campo") {
+        html = `
+        <h3>Nuevo Campo</h3>
+        <label>ID</label>
+        <input type="text" id="idCampo" />
+        <label>Polígono (JSON)</label>
+        <input type="text" id="poligonoCampo" placeholder='[{"lat": -30, "lon": -66}, ...]' />
+        <button onclick="enviarFormulario('campo')">Enviar</button>
+        `;
+      } else if (tipo === "usuario") {
+        html = `
+        <h3>Nuevo Usuario</h3>
+        <label>ID</label>
+        <input type="text" id="idUsuario" />
+        <label>Latitud</label>
+        <input type="number" id="latUsuario" />
+        <label>Longitud</label>
+        <input type="number" id="lonUsuario" />
+        <button onclick="enviarFormulario('usuario')">Enviar</button>
+        `;
+      }
+
+    form.innerHTML = html;
+    container.appendChild(form);
+    }
+
+    function enviarFormulario(tipo) {
+      let url = "";
+      let data = {};
+
+      if (tipo === "campo") {
+        url = "http://localhost:5000/api/campos";
+      try {
+      data = {
+        _id: document.getElementById("idCampo").value,
+        poligono: JSON.parse(document.getElementById("poligonoCampo").value)
+        };
+      } catch (e) {
+        alert("Polígono no es JSON válido.");
+        return;
+      }
+    } else if (tipo === "duenio") {
+      url = "http://localhost:5000/api/duenos";
+      data = {
+        _id: document.getElementById("idDuenio").value,
+        nombre: document.getElementById("nombreDuenio").value,
+        apellido: document.getElementById("apellidoDuenio").value,
+        telefono: document.getElementById("telefonoDuenio").value,
+        email: document.getElementById("emailDuenio").value,
+        direccion: document.getElementById("direccionDuenio").value,
+        idCampo: document.getElementById("idCampoDuenio").value
+    };
+  } else if (tipo === "animal") {
+    url = "http://localhost:5000/api/animales";
+    data = {
+      _id: document.getElementById("idAnimal").value,
+      coordenadas: {
+        lat: parseFloat(document.getElementById("latAnimal").value),
+        lon: parseFloat(document.getElementById("lonAnimal").value)
+      },
+      idDueño: document.getElementById("idDuenioAnimal").value,
+      idCampo: document.getElementById("idCampoAnimal").value,
+      descripcion: document.getElementById("descripcionAnimal").value,
+      tamaño: document.getElementById("tamanoAnimal").value,
+      foto: document.getElementById("fotoAnimal").value
+    };
+  } else if (tipo === "usuario") {
+    url = "http://localhost:5000/api/usuarios";
+    data = {
+      _id: document.getElementById("idUsuario").value,
+      coordenadas: {
+        lat: parseFloat(document.getElementById("latUsuario").value),
+        lon: parseFloat(document.getElementById("lonUsuario").value)
+      }
+    };
+  }
+
+  fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al guardar en el servidor.");
+    alert(`"${tipo}" guardado con éxito.`);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Ocurrió un error al enviar los datos.");
+    });
+  }
+
+    // Cargar datos y notificaciones al inicio
     cargarDatos();
     cargarNotificaciones();
 
-    // Actualizar cada 5 segundos
     setInterval(cargarDatos, 5000);
     setInterval(cargarNotificaciones, 5000);
   </script>
