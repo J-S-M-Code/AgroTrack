@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroTrack - Gestión de Campos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="gestion-page-container">
+    <div class="gestion-content">
+      <a href="index.html" class="link-volver">&larr; Volver al Mapa</a>
+      <h1>Gestión de Campos</h1>
+
+      <div class="formulario-gestion">
+        <h3 id="form-campo-titulo">Nuevo Campo</h3>
+        <form id="form-campo">
+          <input type="hidden" id="campoIdOriginal" name="campoIdOriginal">
+
+          <label for="idCampoForm">ID Campo:</label>
+          <input type="text" id="idCampoForm" name="idCampoForm" required placeholder="Identificador único del campo">
+
+          <label for="nombreCampo">Nombre del Campo (Opcional):</label>
+          <input type="text" id="nombreCampo" name="nombreCampo" placeholder="Ej: Lote N°5 - La Esperanza">
+
+          <label for="poligonoCampo">Polígono (Coordenadas JSON):</label>
+          <textarea id="poligonoCampo" name="poligonoCampo" rows="6" required placeholder='[{"lat": -30.0, "lon": -66.0}, {"lat": -30.1, "lon": -66.0}, {"lat": -30.05, "lon": -66.1}]'></textarea>
+          <small>Formato: Array de objetos, cada objeto con `lat` y `lon`. Ej: `[{"lat": -30, "lon": -66}, ...]`</small>
+
+          <div class="form-buttons" style="margin-top: 15px;">
+            <button type="submit" id="btnSubmitFormCampo">Guardar Campo</button>
+            <button type="button" id="btnCancelarEdicionCampo" class="btn-cancelar" style="display:none;">Cancelar Edición</button>
+          </div>
+        </form>
+      </div>
+
+      <h2>Listado de Campos</h2>
+      <table class="tabla-gestion" id="tablaCampos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Cantidad de Puntos (Polígono)</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" class="mensaje-tabla">Cargando campos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL_GESTION = "http://localhost:5000/api";
+    const formCampo = document.getElementById('form-campo');
+    const tablaCamposBody = document.querySelector('#tablaCampos tbody');
+    const formCampoTitulo = document.getElementById('form-campo-titulo');
+    const btnSubmitFormCampo = document.getElementById('btnSubmitFormCampo');
+    const btnCancelarEdicionCampo = document.getElementById('btnCancelarEdicionCampo');
+    const campoIdOriginalField = document.getElementById('campoIdOriginal');
+
+    let modoEdicionCampo = false;
+
+    function validarPoligonoJSON(jsonString) {
+        try {
+            const poligono = JSON.parse(jsonString);
+            if (!Array.isArray(poligono)) return false;
+            if (poligono.length > 0 && !poligono.every(p => typeof p === 'object' && p !== null && 'lat' in p && 'lon' in p && typeof p.lat === 'number' && typeof p.lon === 'number')) {
+                return false;
+            }
+            return poligono; // Devuelve el objeto parseado si es válido
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async function cargarCampos() {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/campos`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const campos = await response.json();
+        
+        tablaCamposBody.innerHTML = '';
+        if (!campos || campos.length === 0) {
+          tablaCamposBody.innerHTML = '<tr><td colspan="4" class="mensaje-tabla">No hay campos registrados.</td></tr>';
+          return;
+        }
+        campos.forEach(campo => {
+          const fila = tablaCamposBody.insertRow();
+          const numPuntos = (campo.poligono && Array.isArray(campo.poligono)) ? campo.poligono.length : 0;
+          fila.innerHTML = `
+            <td>${campo._id || 'N/A'}</td>
+            <td>${campo.nombre || '-'}</td>
+            <td>${numPuntos}</td>
+            <td class="acciones">
+              <button class="btn-editar" onclick="prepararEdicionCampo('${campo._id}')">Modificar</button>
+              <button class="btn-eliminar" onclick="eliminarCampo('${campo._id}')">Eliminar</button>
+            </td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error al cargar campos:', error);
+        tablaCamposBody.innerHTML = `<tr><td colspan="4" class="mensaje-tabla">Error al cargar campos: ${error.message}</td></tr>`;
+      }
+    }
+
+    async function prepararEdicionCampo(id) {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/campos/${id}`);
+        if (!response.ok) throw new Error(`Error al obtener campo: ${response.statusText}`);
+        const campo = await response.json();
+
+        formCampoTitulo.textContent = 'Modificar Campo';
+        btnSubmitFormCampo.textContent = 'Guardar Cambios';
+        modoEdicionCampo = true;
+        campoIdOriginalField.value = campo._id;
+
+        document.getElementById('idCampoForm').value = campo._id;
+        // document.getElementById('idCampoForm').readOnly = true; // Opcional
+        document.getElementById('nombreCampo').value = campo.nombre || '';
+        document.getElementById('poligonoCampo').value = campo.poligono ? JSON.stringify(campo.poligono, null, 2) : '[]';
+        
+        btnCancelarEdicionCampo.style.display = 'inline-block';
+        formCampo.scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        console.error('Error al preparar edición de campo:', error);
+        alert(`No se pudo cargar el campo para editar: ${error.message}`);
+      }
+    }
+
+    function resetearFormularioCampo() {
+      formCampo.reset();
+      formCampoTitulo.textContent = 'Nuevo Campo';
+      btnSubmitFormCampo.textContent = 'Guardar Campo';
+      modoEdicionCampo = false;
+      campoIdOriginalField.value = '';
+      // document.getElementById('idCampoForm').readOnly = false;
+      btnCancelarEdicionCampo.style.display = 'none';
+    }
+
+    btnCancelarEdicionCampo.addEventListener('click', resetearFormularioCampo);
+
+    formCampo.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const idForm = document.getElementById('idCampoForm').value;
+      const poligonoStr = document.getElementById('poligonoCampo').value;
+
+      if (!idForm.trim()) {
+          alert("El ID del campo es obligatorio.");
+          return;
+      }
+      
+      const poligonoData = validarPoligonoJSON(poligonoStr);
+      if (poligonoData === false) {
+          alert("El formato del JSON para el polígono no es válido. Debe ser un array de objetos con 'lat' y 'lon' numéricos. Ejemplo: [{\"lat\": -30, \"lon\": -66}]");
+          return;
+      }
+      // Opcional: validar que haya al menos 3 puntos para un polígono cerrado, aunque la API podría manejar esto.
+      // if (poligonoData.length > 0 && poligonoData.length < 3) {
+      //     alert("Un polígono debe tener al menos 3 puntos. Para menos puntos, considere otro tipo de geometría.");
+      //     return;
+      // }
+
+
+      const datosCampo = {
+        _id: idForm,
+        nombre: document.getElementById('nombreCampo').value || null,
+        poligono: poligonoData // Ya está parseado y validado
+      };
+
+      let url = `${API_BASE_URL_GESTION}/campos`;
+      let method = 'POST';
+
+      if (modoEdicionCampo && campoIdOriginalField.value) {
+        url = `${API_BASE_URL_GESTION}/campos/${campoIdOriginalField.value}`;
+        method = 'PUT';
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosCampo)
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || `Error al procesar la solicitud.`);
+        }
+        const resultado = await response.json();
+        alert(`Campo ${modoEdicionCampo ? 'modificado' : 'guardado'} con éxito. ID: ${resultado._id || datosCampo._id}`);
+        resetearFormularioCampo();
+        cargarCampos();
+      } catch (error) {
+        console.error(`Error al ${modoEdicionCampo ? 'modificar' : 'guardar'} campo:`, error);
+        alert(`Ocurrió un error: ${error.message}`);
+      }
+    });
+
+    async function eliminarCampo(id) {
+      if (!confirm(`¿Estás seguro de que quieres eliminar el campo con ID: ${id}?`)) return;
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/campos/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || 'Error al eliminar el campo.');
+        }
+        alert(`Campo con ID: ${id} eliminado con éxito.`);
+        cargarCampos();
+      } catch (error) {
+        console.error('Error al eliminar campo:', error);
+        alert(`Ocurrió un error al eliminar el campo: ${error.message}`);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarCampos);
+  </script>
+</body>
+</html>

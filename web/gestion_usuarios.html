@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroTrack - Gestión de Usuarios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="gestion-page-container">
+    <div class="gestion-content">
+      <a href="index.html" class="link-volver">&larr; Volver al Mapa</a>
+      <h1>Gestión de Usuarios</h1>
+
+      <div class="formulario-gestion">
+        <h3 id="form-usuario-titulo">Nuevo Usuario</h3>
+        <form id="form-usuario">
+          <input type="hidden" id="usuarioIdOriginal" name="usuarioIdOriginal">
+
+          <label for="idUsuarioForm">ID Usuario:</label>
+          <input type="text" id="idUsuarioForm" name="idUsuarioForm" required placeholder="Identificador único del usuario">
+          
+          <label for="nombreUsuario">Nombre de Usuario (Opcional):</label>
+          <input type="text" id="nombreUsuario" name="nombreUsuario" placeholder="Ej: juan.perez">
+
+          <label for="latUsuario">Latitud Actual:</label>
+          <input type="number" id="latUsuario" name="latUsuario" step="any" required placeholder="-31.4135">
+
+          <label for="lonUsuario">Longitud Actual:</label>
+          <input type="number" id="lonUsuario" name="lonUsuario" step="any" required placeholder="-64.181">
+          
+          <div class="form-buttons">
+            <button type="submit" id="btnSubmitFormUsuario">Guardar Usuario</button>
+            <button type="button" id="btnCancelarEdicionUsuario" class="btn-cancelar" style="display:none;">Cancelar Edición</button>
+          </div>
+        </form>
+      </div>
+
+      <h2>Listado de Usuarios</h2>
+      <table class="tabla-gestion" id="tablaUsuarios">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre Usuario</th>
+            <th>Latitud</th>
+            <th>Longitud</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="mensaje-tabla">Cargando usuarios...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL_GESTION = "http://localhost:5000/api";
+    const formUsuario = document.getElementById('form-usuario');
+    const tablaUsuariosBody = document.querySelector('#tablaUsuarios tbody');
+    const formUsuarioTitulo = document.getElementById('form-usuario-titulo');
+    const btnSubmitFormUsuario = document.getElementById('btnSubmitFormUsuario');
+    const btnCancelarEdicionUsuario = document.getElementById('btnCancelarEdicionUsuario');
+    const usuarioIdOriginalField = document.getElementById('usuarioIdOriginal');
+
+    let modoEdicionUsuario = false;
+
+    async function cargarUsuarios() {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/usuarios`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const usuarios = await response.json();
+        
+        tablaUsuariosBody.innerHTML = '';
+        if (!usuarios || usuarios.length === 0) {
+          tablaUsuariosBody.innerHTML = '<tr><td colspan="5" class="mensaje-tabla">No hay usuarios registrados.</td></tr>';
+          return;
+        }
+        usuarios.forEach(usuario => {
+          const fila = tablaUsuariosBody.insertRow();
+          fila.innerHTML = `
+            <td>${usuario._id || 'N/A'}</td>
+            <td>${usuario.nombre || '-'}</td> 
+            <td>${usuario.coordenadas && usuario.coordenadas.lat !== undefined ? usuario.coordenadas.lat : '-'}</td>
+            <td>${usuario.coordenadas && usuario.coordenadas.lon !== undefined ? usuario.coordenadas.lon : '-'}</td>
+            <td class="acciones">
+              <button class="btn-editar" onclick="prepararEdicionUsuario('${usuario._id}')">Modificar</button>
+              <button class="btn-eliminar" onclick="eliminarUsuario('${usuario._id}')">Eliminar</button>
+            </td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        tablaUsuariosBody.innerHTML = `<tr><td colspan="5" class="mensaje-tabla">Error al cargar usuarios: ${error.message}</td></tr>`;
+      }
+    }
+
+    async function prepararEdicionUsuario(id) {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/usuarios/${id}`);
+        if (!response.ok) throw new Error(`Error al obtener usuario: ${response.statusText}`);
+        const usuario = await response.json();
+
+        formUsuarioTitulo.textContent = 'Modificar Usuario';
+        btnSubmitFormUsuario.textContent = 'Guardar Cambios';
+        modoEdicionUsuario = true;
+        usuarioIdOriginalField.value = usuario._id;
+
+        document.getElementById('idUsuarioForm').value = usuario._id;
+        // document.getElementById('idUsuarioForm').readOnly = true; // Opcional
+        document.getElementById('nombreUsuario').value = usuario.nombre || '';
+        document.getElementById('latUsuario').value = usuario.coordenadas ? usuario.coordenadas.lat : '';
+        document.getElementById('lonUsuario').value = usuario.coordenadas ? usuario.coordenadas.lon : '';
+        
+        btnCancelarEdicionUsuario.style.display = 'inline-block';
+        formUsuario.scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        console.error('Error al preparar edición de usuario:', error);
+        alert(`No se pudo cargar el usuario para editar: ${error.message}`);
+      }
+    }
+
+    function resetearFormularioUsuario() {
+      formUsuario.reset();
+      formUsuarioTitulo.textContent = 'Nuevo Usuario';
+      btnSubmitFormUsuario.textContent = 'Guardar Usuario';
+      modoEdicionUsuario = false;
+      usuarioIdOriginalField.value = '';
+      // document.getElementById('idUsuarioForm').readOnly = false;
+      btnCancelarEdicionUsuario.style.display = 'none';
+    }
+
+    btnCancelarEdicionUsuario.addEventListener('click', resetearFormularioUsuario);
+
+    formUsuario.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const idForm = document.getElementById('idUsuarioForm').value;
+      const lat = parseFloat(document.getElementById('latUsuario').value);
+      const lon = parseFloat(document.getElementById('lonUsuario').value);
+
+      if (!idForm.trim()) {
+          alert("El ID del usuario es obligatorio.");
+          return;
+      }
+      if (isNaN(lat) || isNaN(lon)) {
+          alert("Latitud y Longitud deben ser números válidos.");
+          return;
+      }
+
+      const datosUsuario = {
+        _id: idForm,
+        nombre: document.getElementById('nombreUsuario').value || null,
+        coordenadas: { lat: lat, lon: lon }
+        // Añadir otros campos aquí si los tienes en el formulario y modelo
+      };
+
+      let url = `${API_BASE_URL_GESTION}/usuarios`;
+      let method = 'POST';
+
+      if (modoEdicionUsuario && usuarioIdOriginalField.value) {
+        url = `${API_BASE_URL_GESTION}/usuarios/${usuarioIdOriginalField.value}`;
+        method = 'PUT';
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosUsuario)
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || `Error al procesar la solicitud.`);
+        }
+        const resultado = await response.json();
+        alert(`Usuario ${modoEdicionUsuario ? 'modificado' : 'guardado'} con éxito. ID: ${resultado._id || datosUsuario._id}`);
+        resetearFormularioUsuario();
+        cargarUsuarios();
+      } catch (error) {
+        console.error(`Error al ${modoEdicionUsuario ? 'modificar' : 'guardar'} usuario:`, error);
+        alert(`Ocurrió un error: ${error.message}`);
+      }
+    });
+
+    async function eliminarUsuario(id) {
+      if (!confirm(`¿Estás seguro de que quieres eliminar el usuario con ID: ${id}?`)) return;
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/usuarios/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || 'Error al eliminar el usuario.');
+        }
+        alert(`Usuario con ID: ${id} eliminado con éxito.`);
+        cargarUsuarios();
+      } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        alert(`Ocurrió un error al eliminar el usuario: ${error.message}`);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarUsuarios);
+  </script>
+</body>
+</html>

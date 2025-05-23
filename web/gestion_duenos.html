@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroTrack - Gestión de Dueños</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="gestion-page-container">
+    <div class="gestion-content">
+      <a href="index.html" class="link-volver">&larr; Volver al Mapa</a>
+      <h1>Gestión de Dueños</h1>
+
+      <div class="formulario-gestion">
+        <h3 id="form-dueno-titulo">Nuevo Dueño</h3>
+        <form id="form-dueno">
+          <input type="hidden" id="duenoIdOriginal" name="duenoIdOriginal">
+
+          <label for="idDuenoForm">ID Dueño (Ej: CUIT/DNI):</label>
+          <input type="text" id="idDuenoForm" name="idDuenoForm" required placeholder="Identificador único del dueño">
+
+          <label for="nombreDueno">Nombre:</label>
+          <input type="text" id="nombreDueno" name="nombreDueno" required placeholder="Nombre del dueño">
+
+          <label for="apellidoDueno">Apellido:</label>
+          <input type="text" id="apellidoDueno" name="apellidoDueno" required placeholder="Apellido del dueño">
+
+          <label for="telefonoDueno">Teléfono (Opcional):</label>
+          <input type="text" id="telefonoDueno" name="telefonoDueno" placeholder="Ej: +5493825123456">
+
+          <label for="emailDueno">Email (Opcional):</label>
+          <input type="email" id="emailDueno" name="emailDueno" placeholder="correo@ejemplo.com">
+
+          <label for="direccionDueno">Dirección (Opcional):</label>
+          <input type="text" id="direccionDueno" name="direccionDueno" placeholder="Calle Falsa 123, Ciudad">
+          
+          <label for="idCampoDueno">ID Campo Principal (Opcional):</label>
+          <input type="text" id="idCampoDueno" name="idCampoDueno" placeholder="ID del campo asociado">
+
+          <div class="form-buttons">
+            <button type="submit" id="btnSubmitFormDueno">Guardar Dueño</button>
+            <button type="button" id="btnCancelarEdicionDueno" class="btn-cancelar" style="display:none;">Cancelar Edición</button>
+          </div>
+        </form>
+      </div>
+
+      <h2>Listado de Dueños</h2>
+      <table class="tabla-gestion" id="tablaDuenos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>ID Campo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="mensaje-tabla">Cargando dueños...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL_GESTION = "http://localhost:5000/api";
+    const formDueno = document.getElementById('form-dueno');
+    const tablaDuenosBody = document.querySelector('#tablaDuenos tbody');
+    const formDuenoTitulo = document.getElementById('form-dueno-titulo');
+    const btnSubmitFormDueno = document.getElementById('btnSubmitFormDueno');
+    const btnCancelarEdicionDueno = document.getElementById('btnCancelarEdicionDueno');
+    const duenoIdOriginalField = document.getElementById('duenoIdOriginal');
+
+    let modoEdicionDueno = false;
+
+    async function cargarDuenos() {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/duenos`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const duenos = await response.json();
+        
+        tablaDuenosBody.innerHTML = '';
+        if (!duenos || duenos.length === 0) {
+          tablaDuenosBody.innerHTML = '<tr><td colspan="7" class="mensaje-tabla">No hay dueños registrados.</td></tr>';
+          return;
+        }
+        duenos.forEach(dueno => {
+          const fila = tablaDuenosBody.insertRow();
+          fila.innerHTML = `
+            <td>${dueno._id || 'N/A'}</td>
+            <td>${dueno.nombre || '-'}</td>
+            <td>${dueno.apellido || '-'}</td>
+            <td>${dueno.telefono || '-'}</td>
+            <td>${dueno.email || '-'}</td>
+            <td>${dueno.idCampo || '-'}</td>
+            <td class="acciones">
+              <button class="btn-editar" onclick="prepararEdicionDueno('${dueno._id}')">Modificar</button>
+              <button class="btn-eliminar" onclick="eliminarDueno('${dueno._id}')">Eliminar</button>
+            </td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error al cargar dueños:', error);
+        tablaDuenosBody.innerHTML = `<tr><td colspan="7" class="mensaje-tabla">Error al cargar dueños: ${error.message}</td></tr>`;
+      }
+    }
+
+    async function prepararEdicionDueno(id) {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/duenos/${id}`);
+        if (!response.ok) throw new Error(`Error al obtener dueño: ${response.statusText}`);
+        const dueno = await response.json();
+
+        formDuenoTitulo.textContent = 'Modificar Dueño';
+        btnSubmitFormDueno.textContent = 'Guardar Cambios';
+        modoEdicionDueno = true;
+        duenoIdOriginalField.value = dueno._id;
+
+        document.getElementById('idDuenoForm').value = dueno._id;
+        // document.getElementById('idDuenoForm').readOnly = true; // Opcional
+        document.getElementById('nombreDueno').value = dueno.nombre || '';
+        document.getElementById('apellidoDueno').value = dueno.apellido || '';
+        document.getElementById('telefonoDueno').value = dueno.telefono || '';
+        document.getElementById('emailDueno').value = dueno.email || '';
+        document.getElementById('direccionDueno').value = dueno.direccion || '';
+        document.getElementById('idCampoDueno').value = dueno.idCampo || '';
+        
+        btnCancelarEdicionDueno.style.display = 'inline-block';
+        formDueno.scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        console.error('Error al preparar edición de dueño:', error);
+        alert(`No se pudo cargar el dueño para editar: ${error.message}`);
+      }
+    }
+
+    function resetearFormularioDueno() {
+      formDueno.reset();
+      formDuenoTitulo.textContent = 'Nuevo Dueño';
+      btnSubmitFormDueno.textContent = 'Guardar Dueño';
+      modoEdicionDueno = false;
+      duenoIdOriginalField.value = '';
+      // document.getElementById('idDuenoForm').readOnly = false;
+      btnCancelarEdicionDueno.style.display = 'none';
+    }
+
+    btnCancelarEdicionDueno.addEventListener('click', resetearFormularioDueno);
+
+    formDueno.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const idForm = document.getElementById('idDuenoForm').value;
+      if (!idForm.trim()) {
+          alert("El ID del dueño es obligatorio.");
+          return;
+      }
+
+      const datosDueno = {
+        _id: idForm,
+        nombre: document.getElementById('nombreDueno').value,
+        apellido: document.getElementById('apellidoDueno').value,
+        telefono: document.getElementById('telefonoDueno').value || null,
+        email: document.getElementById('emailDueno').value || null,
+        direccion: document.getElementById('direccionDueno').value || null,
+        idCampo: document.getElementById('idCampoDueno').value || null
+      };
+
+      let url = `${API_BASE_URL_GESTION}/duenos`;
+      let method = 'POST';
+
+      if (modoEdicionDueno && duenoIdOriginalField.value) {
+        url = `${API_BASE_URL_GESTION}/duenos/${duenoIdOriginalField.value}`;
+        method = 'PUT';
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosDueno)
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || `Error al procesar la solicitud.`);
+        }
+        const resultado = await response.json();
+        alert(`Dueño ${modoEdicionDueno ? 'modificado' : 'guardado'} con éxito. ID: ${resultado._id || datosDueno._id}`);
+        resetearFormularioDueno();
+        cargarDuenos();
+      } catch (error) {
+        console.error(`Error al ${modoEdicionDueno ? 'modificar' : 'guardar'} dueño:`, error);
+        alert(`Ocurrió un error: ${error.message}`);
+      }
+    });
+
+    async function eliminarDueno(id) {
+      if (!confirm(`¿Estás seguro de que quieres eliminar el dueño con ID: ${id}?`)) return;
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/duenos/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || 'Error al eliminar el dueño.');
+        }
+        alert(`Dueño con ID: ${id} eliminado con éxito.`);
+        cargarDuenos();
+      } catch (error) {
+        console.error('Error al eliminar dueño:', error);
+        alert(`Ocurrió un error al eliminar el dueño: ${error.message}`);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarDuenos);
+  </script>
+</body>
+</html>

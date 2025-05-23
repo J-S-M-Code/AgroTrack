@@ -1,0 +1,372 @@
+/* Estilos generales */
+body {
+  margin: 0;
+  display: flex; /* Usado principalmente por index.html, las páginas de gestión lo anulan o no lo necesitan directamente */
+  height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  background-color: #f4f7f6;
+  color: #333;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  color: #2c3e50;
+  margin-top: 1.5em;
+  margin-bottom: 0.7em;
+}
+
+h1 { font-size: 2em; }
+h2 { font-size: 1.6em; }
+h3 { font-size: 1.3em; }
+
+
+a {
+  color: #3498db;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* --- Estilos para la página del Mapa (index.html) --- */
+#map {
+  flex: 7; /* Ocupa el 70% del ancho */
+  height: 100%;
+  border-right: 1px solid #ddd;
+}
+
+#sidebar {
+  flex: 3; /* Ocupa el 30% del ancho */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background-color: #ffffff;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+}
+
+#sidebar h2 {
+  margin-top: 0;
+  border-bottom: 2px solid #2ecc71;
+  padding-bottom: 10px;
+  font-size: 1.5em;
+}
+
+#sidebar button.nav-button { /* Clase específica para botones de navegación */
+  margin: 8px 0;
+  padding: 12px 15px;
+  width: 100%;
+  background-color: #2ecc71; /* Verde principal */
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  text-align: left;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#sidebar button.nav-button:hover {
+  background-color: #27ae60; /* Verde más oscuro */
+  transform: translateY(-1px);
+}
+#sidebar button.nav-button:active {
+  transform: translateY(0px);
+}
+
+
+#notificaciones {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e8f6f0; /* Fondo verde claro */
+  border: 1px solid #d0e9d9;
+  border-radius: 6px;
+}
+
+#notificaciones strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.notificacion {
+  margin-bottom: 8px;
+  padding: 10px;
+  border-left: 5px solid #e74c3c; /* Rojo para alerta */
+  background: #fff;
+  border-radius: 4px;
+  font-size: 0.9em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.notificacion p {
+    margin: 0;
+}
+
+/* --- Estilos para las Páginas de Gestión (ej. gestion_animales.html) --- */
+.gestion-page-container { /* Contenedor para toda la página de gestión */
+    display: block; /* Anula el flex de body si es necesario */
+    width: 100%;
+    min-height: 100vh; /* Asegura que ocupe toda la altura */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.gestion-content { /* Contenedor del contenido principal en páginas de gestión */
+  width: 95%;
+  max-width: 1100px;
+  margin: 0 auto; /* Centrado */
+  padding: 25px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.gestion-content h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 2em;
+    color: #2c3e50;
+}
+
+.link-volver {
+    display: inline-block;
+    margin-bottom: 25px;
+    padding: 10px 18px;
+    background-color: #3498db; /* Azul */
+    color: white !important; /* Forzar color de texto */
+    border-radius: 5px;
+    font-size: 0.95em;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+.link-volver:hover {
+    background-color: #2980b9;
+    text-decoration: none;
+}
+
+.formulario-gestion {
+  margin-bottom: 35px;
+  padding: 25px;
+  background: #f9fafb; /* Ligeramente diferente del fondo de página */
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.formulario-gestion h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.4em;
+  color: #1f2937;
+}
+
+.formulario-gestion label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9em;
+  color: #374151;
+}
+
+.formulario-gestion input[type="text"],
+.formulario-gestion input[type="number"],
+.formulario-gestion input[type="email"],
+.formulario-gestion input[type="url"],
+.formulario-gestion textarea,
+.formulario-gestion select {
+  width: 100%; /* Full width */
+  margin-bottom: 15px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-size: 1em;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.formulario-gestion input:focus,
+.formulario-gestion textarea:focus,
+.formulario-gestion select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    outline: none;
+}
+
+.formulario-gestion textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px; /* Espacio entre botones */
+}
+
+.formulario-gestion button[type="submit"],
+.formulario-gestion button[type="button"] {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.formulario-gestion button[type="submit"] {
+  background-color: #2ecc71; /* Verde */
+  color: white;
+}
+.formulario-gestion button[type="submit"]:hover {
+  background-color: #27ae60;
+  transform: translateY(-1px);
+}
+
+.formulario-gestion button.btn-cancelar {
+  background-color: #95a5a6; /* Gris */
+  color: white;
+}
+.formulario-gestion button.btn-cancelar:hover {
+  background-color: #7f8c8d;
+  transform: translateY(-1px);
+}
+
+
+.tabla-gestion {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden; /* Para que el border-radius afecte a th */
+}
+
+.tabla-gestion th,
+.tabla-gestion td {
+  border: 1px solid #e5e7eb;
+  padding: 12px 15px;
+  text-align: left;
+  font-size: 0.95em;
+}
+
+.tabla-gestion th {
+  background-color: #2ecc71; /* Verde para cabeceras */
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabla-gestion tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.tabla-gestion tr:hover {
+  background-color: #f0f9ff; /* Azul muy claro al pasar el mouse */
+}
+
+.tabla-gestion .acciones button {
+  margin-right: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.88em;
+  font-weight: 500;
+  color: white;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.tabla-gestion .acciones button:last-child {
+    margin-right: 0;
+}
+.tabla-gestion .acciones button:hover {
+    transform: translateY(-1px);
+}
+
+.tabla-gestion .btn-editar {
+  background-color: #f39c12; /* Naranja */
+}
+.tabla-gestion .btn-editar:hover {
+  background-color: #e67e22;
+}
+
+.tabla-gestion .btn-eliminar {
+  background-color: #e74c3c; /* Rojo */
+}
+.tabla-gestion .btn-eliminar:hover {
+  background-color: #c0392b;
+}
+
+/* Mensaje de carga o vacío en tablas */
+.mensaje-tabla {
+    text-align: center;
+    padding: 25px;
+    font-style: italic;
+    color: #6b7280; /* Gris */
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column; /* Apila sidebar y mapa/contenido en móviles para index.html */
+  }
+  #map {
+    flex: 1;
+    height: 50vh; /* Altura para el mapa en móvil */
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+  #sidebar {
+    flex: 1;
+    height: auto; /* Altura automática para el sidebar */
+    padding: 15px;
+    box-shadow: none;
+  }
+  .gestion-content {
+    width: 100%;
+    padding: 15px;
+    margin-top: 0;
+  }
+  .gestion-content h1 {
+      font-size: 1.6em;
+  }
+  .formulario-gestion {
+    padding: 15px;
+  }
+  .formulario-gestion input[type="text"],
+  .formulario-gestion input[type="number"],
+  .formulario-gestion input[type="email"],
+  .formulario-gestion input[type="url"],
+  .formulario-gestion textarea,
+  .formulario-gestion select {
+    padding: 10px;
+    font-size: 0.95em;
+  }
+  .form-buttons {
+    flex-direction: column; /* Botones en columna en móviles */
+  }
+  .formulario-gestion button[type="submit"],
+  .formulario-gestion button.btn-cancelar {
+    width: 100%; /* Botones ocupan todo el ancho */
+  }
+
+  .tabla-gestion {
+    font-size: 0.85em; /* Texto más pequeño en tablas en móviles */
+  }
+  .tabla-gestion th,
+  .tabla-gestion td {
+    padding: 8px 10px;
+  }
+  .tabla-gestion .acciones button {
+    padding: 6px 8px;
+    font-size: 0.8em;
+    margin-bottom: 5px; /* Espacio si se apilan */
+  }
+  .tabla-gestion .acciones {
+      display: flex;
+      flex-direction: column; /* Botones de acción en columna */
+  }
+}

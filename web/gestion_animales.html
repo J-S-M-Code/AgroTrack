@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroTrack - Gestión de Animales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="gestion-page-container">
+    <div class="gestion-content">
+      <a href="index.html" class="link-volver">&larr; Volver al Mapa</a>
+      <h1>Gestión de Animales</h1>
+
+      <div class="formulario-gestion">
+        <h3 id="form-animal-titulo">Nuevo Animal</h3>
+        <form id="form-animal">
+          <input type="hidden" id="animalIdOriginal" name="animalIdOriginal"> <label for="idAnimalForm">ID (Caravana/Identificador):</label>
+          <input type="text" id="idAnimalForm" name="idAnimalForm" required placeholder="Ej: SENASA-12345">
+
+          <label for="descripcionAnimal">Descripción:</label>
+          <input type="text" id="descripcionAnimal" name="descripcionAnimal" placeholder="Ej: Vaca Holando-Argentina N°7">
+
+          <label for="latAnimal">Latitud:</label>
+          <input type="number" id="latAnimal" name="latAnimal" step="any" required placeholder="-31.4135">
+
+          <label for="lonAnimal">Longitud:</label>
+          <input type="number" id="lonAnimal" name="lonAnimal" step="any" required placeholder="-64.181">
+
+          <label for="idDuenioAnimal">ID Dueño (Opcional):</label>
+          <input type="text" id="idDuenioAnimal" name="idDuenioAnimal" placeholder="ID del dueño registrado">
+
+          <label for="idCampoAnimal">ID Campo (Opcional):</label>
+          <input type="text" id="idCampoAnimal" name="idCampoAnimal" placeholder="ID del campo registrado">
+          
+          <label for="tamanoAnimal">Tamaño (Opcional):</label>
+          <input type="text" id="tamanoAnimal" name="tamanoAnimal" placeholder="Ej: Grande, Mediano, Pequeño">
+
+          <label for="fotoAnimal">Foto (URL, Opcional):</label>
+          <input type="url" id="fotoAnimal" name="fotoAnimal" placeholder="https://ejemplo.com/foto.jpg">
+
+          <div class="form-buttons">
+            <button type="submit" id="btnSubmitFormAnimal">Guardar Animal</button>
+            <button type="button" id="btnCancelarEdicionAnimal" class="btn-cancelar" style="display:none;">Cancelar Edición</button>
+          </div>
+        </form>
+      </div>
+
+      <h2>Listado de Animales</h2>
+      <table class="tabla-gestion" id="tablaAnimales">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Descripción</th>
+            <th>Latitud</th>
+            <th>Longitud</th>
+            <th>ID Dueño</th>
+            <th>ID Campo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+              <td colspan="7" class="mensaje-tabla">Cargando animales...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL_GESTION = "http://localhost:5000/api";
+    const formAnimal = document.getElementById('form-animal');
+    const tablaAnimalesBody = document.querySelector('#tablaAnimales tbody');
+    const formAnimalTitulo = document.getElementById('form-animal-titulo');
+    const btnSubmitFormAnimal = document.getElementById('btnSubmitFormAnimal');
+    const btnCancelarEdicionAnimal = document.getElementById('btnCancelarEdicionAnimal');
+    const animalIdOriginalField = document.getElementById('animalIdOriginal'); // Campo oculto para el ID original en edición
+
+    let modoEdicionAnimal = false;
+
+    /**
+     * Carga y muestra los animales en la tabla.
+     */
+    async function cargarAnimales() {
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/animales`);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+        const animales = await response.json();
+        
+        tablaAnimalesBody.innerHTML = ''; // Limpiar tabla
+
+        if (!animales || animales.length === 0) {
+          tablaAnimalesBody.innerHTML = '<tr><td colspan="7" class="mensaje-tabla">No hay animales registrados.</td></tr>';
+          return;
+        }
+
+        animales.forEach(animal => {
+          const fila = tablaAnimalesBody.insertRow();
+          fila.innerHTML = `
+            <td>${animal._id || 'N/A'}</td>
+            <td>${animal.descripcion || '-'}</td>
+            <td>${animal.coordenadas && animal.coordenadas.lat !== undefined ? animal.coordenadas.lat : '-'}</td>
+            <td>${animal.coordenadas && animal.coordenadas.lon !== undefined ? animal.coordenadas.lon : '-'}</td>
+            <td>${animal.idDueño || '-'}</td>
+            <td>${animal.idCampo || '-'}</td>
+            <td class="acciones">
+              <button class="btn-editar" onclick="prepararEdicionAnimal('${animal._id}')">Modificar</button>
+              <button class="btn-eliminar" onclick="eliminarAnimal('${animal._id}')">Eliminar</button>
+            </td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error al cargar animales:', error);
+        tablaAnimalesBody.innerHTML = `<tr><td colspan="7" class="mensaje-tabla">Error al cargar animales: ${error.message}</td></tr>`;
+      }
+    }
+
+    /**
+     * Prepara el formulario para editar un animal existente.
+     */
+    async function prepararEdicionAnimal(id) {
+        try {
+            const response = await fetch(`${API_BASE_URL_GESTION}/animales/${id}`);
+            if (!response.ok) throw new Error(`Error al obtener animal para editar: ${response.status} ${response.statusText}`);
+            const animal = await response.json();
+
+            formAnimalTitulo.textContent = 'Modificar Animal';
+            btnSubmitFormAnimal.textContent = 'Guardar Cambios';
+            modoEdicionAnimal = true;
+            animalIdOriginalField.value = animal._id; // Guardar el ID original para la URL del PUT
+
+            document.getElementById('idAnimalForm').value = animal._id;
+            // Opcional: hacer el ID no editable durante la modificación si tu lógica de negocio lo requiere.
+            // document.getElementById('idAnimalForm').readOnly = true; 
+            document.getElementById('descripcionAnimal').value = animal.descripcion || '';
+            document.getElementById('latAnimal').value = animal.coordenadas ? animal.coordenadas.lat : '';
+            document.getElementById('lonAnimal').value = animal.coordenadas ? animal.coordenadas.lon : '';
+            document.getElementById('idDuenioAnimal').value = animal.idDueño || '';
+            document.getElementById('idCampoAnimal').value = animal.idCampo || '';
+            document.getElementById('tamanoAnimal').value = animal.tamaño || '';
+            document.getElementById('fotoAnimal').value = animal.foto || '';
+            
+            btnCancelarEdicionAnimal.style.display = 'inline-block';
+            formAnimal.scrollIntoView({ behavior: 'smooth' }); // Scroll al formulario
+        } catch (error) {
+            console.error('Error al preparar edición de animal:', error);
+            alert(`No se pudo cargar el animal para editar: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Resetea el formulario al estado inicial (para creación).
+     */
+    function resetearFormularioAnimal() {
+        formAnimal.reset();
+        formAnimalTitulo.textContent = 'Nuevo Animal';
+        btnSubmitFormAnimal.textContent = 'Guardar Animal';
+        modoEdicionAnimal = false;
+        animalIdOriginalField.value = '';
+        // document.getElementById('idAnimalForm').readOnly = false;
+        btnCancelarEdicionAnimal.style.display = 'none';
+    }
+
+    btnCancelarEdicionAnimal.addEventListener('click', resetearFormularioAnimal);
+
+    /**
+     * Maneja el envío del formulario (Crear o Modificar animal).
+     */
+    formAnimal.addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const idForm = document.getElementById('idAnimalForm').value;
+      const lat = parseFloat(document.getElementById('latAnimal').value);
+      const lon = parseFloat(document.getElementById('lonAnimal').value);
+
+      if (!idForm.trim()) {
+          alert("El ID del animal es obligatorio.");
+          return;
+      }
+      if (isNaN(lat) || isNaN(lon)) {
+          alert("Latitud y Longitud deben ser números válidos.");
+          return;
+      }
+
+      const datosAnimal = {
+        _id: idForm,
+        descripcion: document.getElementById('descripcionAnimal').value,
+        coordenadas: { lat: lat, lon: lon },
+        idDueño: document.getElementById('idDuenioAnimal').value || null, // Enviar null si está vacío
+        idCampo: document.getElementById('idCampoAnimal').value || null, // Enviar null si está vacío
+        tamaño: document.getElementById('tamanoAnimal').value || null,
+        foto: document.getElementById('fotoAnimal').value || null
+      };
+      
+      let url = `${API_BASE_URL_GESTION}/animales`;
+      let method = 'POST';
+
+      if (modoEdicionAnimal && animalIdOriginalField.value) {
+        url = `${API_BASE_URL_GESTION}/animales/${animalIdOriginalField.value}`;
+        method = 'PUT';
+        // Si el _id puede cambiar, el backend debe manejarlo.
+        // Si el _id no debe cambiar en una edición, podrías omitir `_id: idForm` del payload
+        // o asegurarte que `idForm` sea igual a `animalIdOriginalField.value`.
+        // Por ahora, se envía el _id del formulario, permitiendo su modificación si el backend lo soporta.
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosAnimal),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || `Error al procesar la solicitud.`);
+        }
+        
+        const resultado = await response.json();
+        alert(`Animal ${modoEdicionAnimal ? 'modificado' : 'guardado'} con éxito. ID: ${resultado._id || datosAnimal._id}`);
+        resetearFormularioAnimal();
+        cargarAnimales(); // Recargar la lista
+      } catch (error) {
+        console.error(`Error al ${modoEdicionAnimal ? 'modificar' : 'guardar'} animal:`, error);
+        alert(`Ocurrió un error: ${error.message}`);
+      }
+    });
+
+    /**
+     * Elimina un animal.
+     */
+    async function eliminarAnimal(id) {
+      if (!confirm(`¿Estás seguro de que quieres eliminar el animal con ID: ${id}? Esta acción no se puede deshacer.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL_GESTION}/animales/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}: ${response.statusText}` }));
+          throw new Error(errorData.message || 'Error al eliminar el animal.');
+        }
+        
+        alert(`Animal con ID: ${id} eliminado con éxito.`);
+        cargarAnimales(); // Recargar la lista
+      } catch (error) {
+        console.error('Error al eliminar animal:', error);
+        alert(`Ocurrió un error al eliminar el animal: ${error.message}`);
+      }
+    }
+
+    // Cargar animales cuando la página esté lista
+    document.addEventListener('DOMContentLoaded', cargarAnimales);
+  </script>
+</body>
+</html>

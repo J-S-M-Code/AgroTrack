@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AgroTrack - Mapa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+    crossorigin=""/>
+  <link rel="stylesheet" href="estilos.css"> </head>
+<body>
+  <div id="map"></div>
+
+  <div id="sidebar">
+    <h2>Menú Principal</h2>
+    <button class="nav-button" onclick="window.location.href='gestion_duenos.html'">Gestionar Dueños</button>
+    <button class="nav-button" onclick="window.location.href='gestion_animales.html'">Gestionar Animales</button>
+    <button class="nav-button" onclick="window.location.href='gestion_campos.html'">Gestionar Campos</button>
+    <button class="nav-button" onclick="window.location.href='gestion_usuarios.html'">Gestionar Usuarios</button>
+
+    <div id="notificaciones">
+      <strong>Notificaciones:</strong>
+      <div id="noti-lista">
+        </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+    crossorigin=""></script>
+  <script src="app.js"></script> </body>
+</html>
