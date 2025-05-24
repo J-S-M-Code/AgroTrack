@@ -58,9 +58,10 @@ docker run -d -p 543:543 --name agroTrack mongo
 docker ps
 ```
 6. We create the db collections. Run the createCollections.bat file.  
-7. ```cmd 
+7. 
+```cmd 
 python archivo.py
-```
+```  
 ### For Linux
 1. Run terminal
 2. Run the following commands
@@ -95,9 +96,10 @@ sudo docker start
 sudo docker ps
 ```
 7. We create the db collections. Run the createCollections.sh file.  
-8. ```bash
+8. 
+```bash
 python3 archivo.py
-```
+```  
 
 
 [def1]: https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module
